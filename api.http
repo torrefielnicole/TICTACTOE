@@ -1,0 +1,70 @@
+### Tic Tac Toe API — REST Client Tests
+### Install "REST Client" extension in VS Code, then click "Send Request"
+
+@base = http://localhost:3000/api
+
+### ── Players ────────────────────────────────────────────────
+
+# Create a player
+POST {{base}}/players
+Content-Type: application/json
+
+{ "username": "alice", "displayName": "Alice" }
+
+###
+
+# Get player profile
+GET {{base}}/players/alice
+
+###
+
+# Leaderboard
+GET {{base}}/leaderboard?limit=5
+
+###
+
+### ── Games ──────────────────────────────────────────────────
+
+# Start PvC (vs AI, Hard)
+POST {{base}}/games
+Content-Type: application/json
+
+{ "mode": "PvC", "difficulty": "hard", "playerX": "alice" }
+
+###
+
+# Start PvP
+POST {{base}}/games
+Content-Type: application/json
+
+{ "mode": "PvP", "playerX": "alice", "playerO": "bob" }
+
+###
+
+# Get game state (replace 1 with your game ID)
+GET {{base}}/games/1
+
+###
+
+# Make a move — position 4 (center), player alice
+POST {{base}}/games/1/move
+Content-Type: application/json
+
+{ "position": 4, "player": "alice" }
+
+###
+
+# Get move history
+GET {{base}}/games/1/moves
+
+###
+
+# List all active games
+GET {{base}}/games?status=active
+
+###
+
+# Abandon a game
+DELETE {{base}}/games/1
+
+###

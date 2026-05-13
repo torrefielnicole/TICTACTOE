@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tic Tac Toe</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #0d0d0d;
+    --surface: #161616;
+    --border:  #2a2a2a;
+    --accent:  #e8ff47;
+    --x-col:   #ff5c5c;
+    --o-col:   #5ce0ff;
+    --text:    #f0f0f0;
+    --muted:   #555;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 7vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+    margin-bottom: .2rem;
+  }
+  .tagline { color: var(--muted); font-size: .7rem; letter-spacing: .18em; margin-bottom: 2.5rem; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.75rem;
+    width: 100%; max-width: 420px;
+  }
+  .panel h2 { font-family: 'Syne', sans-serif; font-size: .9rem; color: var(--accent); letter-spacing: .1em; margin-bottom: 1.25rem; }
+
+  .toggle { display: flex; gap: .5rem; margin-bottom: 1.2rem; }
+  .tbtn {
+    flex: 1; padding: .6rem; border: 1px solid var(--border);
+    background: var(--bg); color: var(--muted); border-radius: 7px;
+    cursor: pointer; font-family: 'Space Mono', monospace; font-size: .72rem;
+    letter-spacing: .08em; transition: all .15s;
+  }
+  .tbtn.on { border-color: var(--accent); color: var(--accent); background: #1c2000; }
+
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: .65rem; letter-spacing: .1em; color: var(--muted); margin-bottom: .35rem; }
+  input, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: .82rem;
+    padding: .58rem .75rem; outline: none; transition: border-color .2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+
+  .btn-start {
+    width: 100%; padding: .9rem; background: var(--accent); color: #000;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+    letter-spacing: .06em; transition: opacity .15s, transform .1s;
+    margin-top: .25rem;
+  }
+  .btn-start:hover { opacity: .88; transform: translateY(-1px); }
+  .btn-start:active { transform: translateY(0); }
+
+  #game { display: none; flex-direction: column; align-items: center; gap: 1.4rem; width: 100%; }
+  #game.on { display: flex; }
+
+  .players-row {
+    display: flex; gap: 1rem; align-items: center;
+    font-size: .72rem; letter-spacing: .08em;
+  }
+  .player-tag {
+    padding: .4rem .9rem; border-radius: 100px;
+    border: 1px solid var(--border); color: var(--muted);
+    transition: all .3s;
+  }
+  .player-tag.active-x { border-color: var(--x-col); color: var(--x-col); background: #200a0a; }
+  .player-tag.active-o { border-color: var(--o-col); color: var(--o-col); background: #0a1a20; }
+  .vs { color: var(--muted); font-size: .65rem; }
+
+  .board {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; width: min(320px, 88vw);
+  }
+  .cell {
+    aspect-ratio: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: clamp(1.8rem, 7vw, 2.8rem); font-weight: 800;
+    transition: background .12s, border-color .12s, transform .1s;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .cell:hover:not(.taken):not(.dead) { background: #1e1e1e; border-color: #3a3a3a; transform: scale(1.05); }
+  .cell.taken { cursor: default; }
+  .cell.dead  { cursor: default; }
+  .cell.X { color: var(--x-col); }
+  .cell.O { color: var(--o-col); }
+  .cell.win { background: #1c1c00; border-color: var(--accent); animation: wink .5s ease; }
+  @keyframes wink { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+  .result-banner {
+    font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800;
+    letter-spacing: .08em; padding: .5rem 1.5rem;
+    border: 1px solid var(--border); border-radius: 100px;
+    min-height: 2.4rem; display: flex; align-items: center;
+    transition: all .3s;
+  }
+  .result-banner.x-win  { border-color: var(--x-col); color: var(--x-col); }
+  .result-banner.o-win  { border-color: var(--o-col); color: var(--o-col); }
+  .result-banner.draw   { border-color: var(--accent); color: var(--accent); }
+  .result-banner.x-turn { border-color: var(--x-col); color: var(--x-col); }
+  .result-banner.o-turn { border-color: var(--o-col); color: var(--o-col); }
+
+  .score-row {
+    display: flex; gap: 1.5rem; font-size: .68rem;
+    color: var(--muted); letter-spacing: .08em;
+  }
+  .score-row b { color: var(--text); }
+
+  .controls { display: flex; gap: .6rem; flex-wrap: wrap; justify-content: center; }
+  .btn-sm {
+    padding: .45rem 1.1rem; border: 1px solid var(--border); border-radius: 6px;
+    background: transparent; color: var(--text);
+    font-family: 'Space Mono', monospace; font-size: .7rem; letter-spacing: .06em;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+
+  #scores-panel { display: none; width: 100%; max-width: 420px; margin-top: 1rem; }
+  #scores-panel.on { display: block; }
+  #scores-panel h3 { font-family: 'Syne', sans-serif; font-size: .8rem; color: var(--muted); letter-spacing: .12em; margin-bottom: .7rem; }
+  .lb { width: 100%; border-collapse: collapse; font-size: .7rem; }
+  .lb th { color: var(--muted); font-weight: 400; letter-spacing: .08em; padding: .3rem .5rem; text-align: left; border-bottom: 1px solid var(--border); }
+  .lb td { padding: .45rem .5rem; border-bottom: 1px solid #1e1e1e; }
+  .lb tr:last-child td { border: none; }
+  .lb .rank1 { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>TIC TAC TOE</h1>
+<p class="tagline">CLASSIC STRATEGY · MODERN INTERFACE</p>
+
+<div class="panel" id="setup">
+  <h2>NEW GAME</h2>
+  <div class="toggle">
+    <button class="tbtn on" id="btnVsAI" onclick="setMode('PvC')">VS AI</button>
+    <button class="tbtn"    id="btnVsP"  onclick="setMode('PvP')">VS PLAYER</button>
+  </div>
+  <div class="field">
+    <label>PLAYER X NAME</label>
+    <input id="nameX" type="text" value="Player X"/>
+  </div>
+  <div class="field" id="fieldO" style="display:none">
+    <label>PLAYER O NAME</label>
+    <input id="nameO" type="text" value="Player O"/>
+  </div>
+  <div class="field" id="fieldDiff">
+    <label>AI DIFFICULTY</label>
+    <select id="diff">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+  <button class="btn-start" onclick="startGame()">START GAME</button>
+</div>
+
+<div id="game">
+  <div class="players-row">
+    <span class="player-tag" id="tagX">—</span>
+    <span class="vs">VS</span>
+    <span class="player-tag" id="tagO">—</span>
+  </div>
+  <div class="result-banner" id="banner">—</div>
+  <div class="board" id="board"></div>
+  <div class="score-row" id="scoreRow"></div>
+  <div class="controls">
+    <button class="btn-sm" onclick="rematch()">REMATCH</button>
+    <button class="btn-sm" onclick="newGame()">NEW GAME</button>
+    <button class="btn-sm" onclick="toggleScores()">SCORES</button>
+  </div>
+</div>
+
+<div id="scores-panel">
+  <h3>SESSION SCORES</h3>
+  <table class="lb">
+    <thead><tr><th>#</th><th>PLAYER</th><th>W</th><th>L</th><th>D</th><th>WIN%</th></tr></thead>
+    <tbody id="lbBody"></tbody>
+  </table>
+</div>
+
+<script>
+const WIN_LINES = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+function checkWinner(b) {
+  for (const [a,c,e] of WIN_LINES) {
+    if (b[a] !== '' && b[a] === b[c] && b[c] === b[e])
+      return { winner: b[a], line: [a,c,e] };
+  }
+  if (b.every(v => v !== '')) return { winner: 'draw', line: [] };
+  return null;
+}
+
+function minimax(b, isMax, alpha, beta, depth) {
+  const res = checkWinner(b);
+  if (res) {
+    if (res.winner === 'O') return 10 - depth;
+    if (res.winner === 'X') return depth - 10;
+    return 0;
+  }
+  const emp = b.map((v,i) => v===''?i:-1).filter(i=>i>=0);
+  if (isMax) {
+    let best = -Infinity;
+    for (const i of emp) {
+      b[i]='O';
+      best = Math.max(best, minimax(b, false, alpha, beta, depth+1));
+      b[i]='';
+      alpha = Math.max(alpha, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const i of emp) {
+      b[i]='X';
+      best = Math.min(best, minimax(b, true, alpha, beta, depth+1));
+      b[i]='';
+      beta = Math.min(beta, best);
+      if (beta <= alpha) break;
+    }
+    return best;
+  }
+}
+
+function getBest(b) {
+  const emp = b.map((v,i) => v===''?i:-1).filter(i=>i>=0);
+  let best=-Infinity, move=emp[0];
+  for (const i of emp) {
+    b[i]='O';
+    const s = minimax(b, false, -Infinity, Infinity, 0);
+    b[i]='';
+    if (s > best) { best=s; move=i; }
+  }
+  return move;
+}
+
+function aiMove(b, diff) {
+  const emp = b.map((v,i) => v===''?i:-1).filter(i=>i>=0);
+  if (!emp.length) return -1;
+  const rnd = () => emp[Math.floor(Math.random()*emp.length)];
+  if (diff === 'easy') return Math.random() < 0.75 ? rnd() : getBest([...b]);
+  if (diff === 'medium') {
+    const bc = [...b];
+    for (const i of emp) { bc[i]='O'; if (checkWinner(bc)?.winner==='O') { bc[i]=''; return i; } bc[i]=''; }
+    for (const i of emp) { bc[i]='X'; if (checkWinner(bc)?.winner==='X') { bc[i]=''; return i; } bc[i]=''; }
+    return Math.random() < 0.5 ? rnd() : getBest([...b]);
+  }
+  return getBest([...b]);
+}
+
+let mode='PvC', diff='medium', nameX='Player X', nameO='AI';
+let board=[], turn='X', over=false;
+let stats={};
+
+function ensureStats(n) { if (!stats[n]) stats[n]={w:0,l:0,d:0}; }
+
+function setMode(m) {
+  mode=m;
+  document.getElementById('btnVsAI').classList.toggle('on', m==='PvC');
+  document.getElementById('btnVsP').classList.toggle('on', m==='PvP');
+  document.getElementById('fieldO').style.display  = m==='PvP'?'':'none';
+  document.getElementById('fieldDiff').style.display = m==='PvC'?'':'none';
+}
+
+function startGame() {
+  nameX = document.getElementById('nameX').value.trim() || 'Player X';
+  nameO = mode==='PvP' ? (document.getElementById('nameO').value.trim()||'Player O') : 'AI';
+  diff  = document.getElementById('diff').value;
+  ensureStats(nameX); ensureStats(nameO);
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').classList.add('on');
+  document.getElementById('scores-panel').classList.remove('on');
+  initBoard();
+}
+
+function initBoard() {
+  board=Array(9).fill(''); turn='X'; over=false;
+  renderBoard(); updateBanner(); updateTags(); updateScoreRow();
+}
+
+function rematch() { initBoard(); }
+
+function newGame() {
+  document.getElementById('game').classList.remove('on');
+  document.getElementById('scores-panel').classList.remove('on');
+  document.getElementById('setup').style.display='';
+}
+
+function toggleScores() {
+  const p=document.getElementById('scores-panel');
+  p.classList.toggle('on');
+  if (p.classList.contains('on')) renderLeaderboard();
+}
+
+function renderBoard(winLine=[]) {
+  const el=document.getElementById('board');
+  el.innerHTML='';
+  board.forEach((val,i) => {
+    const cell=document.createElement('div');
+    cell.className='cell'+(val?' taken '+val:'')+(over?' dead':'')+(winLine.includes(i)?' win':'');
+    cell.textContent=val;
+    if (!val && !over) cell.onclick=()=>play(i);
+    el.appendChild(cell);
+  });
+}
+
+function play(i) {
+  if (over || board[i]!=='') return;
+  board[i]=turn;
+  const res=checkWinner(board);
+  if (res) {
+    over=true;
+    renderBoard(res.line);
+    settle(res.winner);
+    return;
+  }
+  turn=turn==='X'?'O':'X';
+  updateBanner(); updateTags(); renderBoard();
+  if (!over && mode==='PvC' && turn==='O') {
+    setTimeout(()=>{ const pos=aiMove([...board],diff); if(pos>=0) play(pos); }, 300);
+  }
+}
+
+function settle(winner) {
+  const b=document.getElementById('banner');
+  if (winner==='draw') {
+    b.className='result-banner draw'; b.textContent="IT'S A DRAW";
+    stats[nameX].d++; stats[nameO].d++;
+  } else if (winner==='X') {
+    b.className='result-banner x-win'; b.textContent=nameX.toUpperCase()+' WINS!';
+    stats[nameX].w++; stats[nameO].l++;
+  } else {
+    b.className='result-banner o-win'; b.textContent=nameO.toUpperCase()+' WINS!';
+    stats[nameO].w++; stats[nameX].l++;
+  }
+  updateTags(); updateScoreRow();
+}
+
+function updateBanner() {
+  const b=document.getElementById('banner');
+  const name=turn==='X'?nameX:nameO;
+  b.className=`result-banner ${turn==='X'?'x-turn':'o-turn'}`;
+  b.textContent=name.toUpperCase()+"'S TURN";
+}
+
+function updateTags() {
+  const tx=document.getElementById('tagX');
+  const to=document.getElementById('tagO');
+  tx.textContent=nameX.toUpperCase();
+  to.textContent=nameO.toUpperCase();
+  tx.className='player-tag'+(!over&&turn==='X'?' active-x':'');
+  to.className='player-tag'+(!over&&turn==='O'?' active-o':'');
+}
+
+function updateScoreRow() {
+  const sx=stats[nameX]||{w:0,l:0,d:0};
+  const so=stats[nameO]||{w:0,l:0,d:0};
+  document.getElementById('scoreRow').innerHTML=
+    `<span>${nameX}: <b>${sx.w}W ${sx.l}L ${sx.d}D</b></span>
+     <span>${nameO}: <b>${so.w}W ${so.l}L ${so.d}D</b></span>`;
+}
+
+function renderLeaderboard() {
+  const rows=Object.entries(stats).map(([n,s])=>{
+    const t=s.w+s.l+s.d;
+    return {n,...s,pct:t?((s.w/t)*100).toFixed(0):0};
+  }).sort((a,b)=>b.w-a.w||b.pct-a.pct);
+  document.getElementById('lbBody').innerHTML=rows.map((r,i)=>
+    `<tr><td class="${i===0?'rank1':''}">${i+1}</td><td>${r.n}</td><td>${r.w}</td><td>${r.l}</td><td>${r.d}</td><td>${r.pct}%</td></tr>`
+  ).join('');
+}
+</script>
+</body>
+</html>
